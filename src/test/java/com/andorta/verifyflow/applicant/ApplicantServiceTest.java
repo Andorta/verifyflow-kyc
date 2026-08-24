@@ -7,6 +7,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,5 +84,35 @@ class ApplicantServiceTest {
         ))
                 .isInstanceOf(DuplicateApplicantException.class)
                 .hasCauseInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void returnsApplicantWhenItExists() {
+        UUID id = UUID.randomUUID();
+
+        Applicant applicant = new Applicant(
+                "customer-202",
+                "customer@example.com",
+                "GB"
+        );
+
+        when(applicantRepository.findById(id))
+                .thenReturn(Optional.of(applicant));
+
+        Applicant result = applicantService.getApplicant(id);
+
+        assertThat(result).isSameAs(applicant);
+    }
+
+    @Test
+    void throwsWhenApplicantDoesNotExist() {
+        UUID id = UUID.randomUUID();
+
+        when(applicantRepository.findById(id))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> applicantService.getApplicant(id))
+                .isInstanceOf(ApplicantNotFoundException.class)
+                .hasMessageContaining(id.toString());
     }
 }

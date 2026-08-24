@@ -14,7 +14,9 @@ import java.util.UUID;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -61,6 +63,9 @@ class ApplicantControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
+                .andExpect(header().string(
+        "Location",
+        "http://localhost/api/v1/applicants/" + applicantId))
                 .andExpect(jsonPath("$.id")
                         .value(applicantId.toString()))
                 .andExpect(jsonPath("$.externalReference")
@@ -95,6 +100,56 @@ class ApplicantControllerTest {
 
         verifyNoInteractions(applicantService);
     }
+
+    @Test
+void getsApplicantById() throws Exception {
+    UUID applicantId = UUID.randomUUID();
+    Applicant applicant = mock(Applicant.class);
+
+    when(applicant.getId()).thenReturn(applicantId);
+    when(applicant.getExternalReference())
+            .thenReturn("customer-202");
+    when(applicant.getEmail())
+            .thenReturn("customer@example.com");
+    when(applicant.getCountryCode()).thenReturn("GB");
+    when(applicant.getCreatedAt()).thenReturn(
+            Instant.parse("2026-08-24T10:00:00Z")
+    );
+
+    when(applicantService.getApplicant(applicantId))
+            .thenReturn(applicant);
+
+    mockMvc.perform(get(
+                    "/api/v1/applicants/{id}",
+                    applicantId
+            ))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id")
+                    .value(applicantId.toString()))
+            .andExpect(jsonPath("$.externalReference")
+                    .value("customer-202"))
+            .andExpect(jsonPath("$.countryCode").value("GB"));
+}
+
+@Test
+void returnsNotFoundForUnknownApplicant() throws Exception {
+    UUID applicantId = UUID.randomUUID();
+
+    when(applicantService.getApplicant(applicantId))
+            .thenThrow(
+                    new ApplicantNotFoundException(applicantId)
+            );
+
+    mockMvc.perform(get(
+                    "/api/v1/applicants/{id}",
+                    applicantId
+            ))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title")
+                    .value("Applicant not found"))
+            .andExpect(jsonPath("$.code")
+                    .value("APPLICANT_NOT_FOUND"));
+}
 
     @Test
     void returnsConflictForDuplicateApplicant() throws Exception {

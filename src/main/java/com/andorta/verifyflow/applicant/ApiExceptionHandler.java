@@ -71,4 +71,23 @@ public class ApiExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(problem);
     }
+
+   @ExceptionHandler(ApplicantNotFoundException.class)
+public ResponseEntity<ProblemDetail> handleApplicantNotFound(
+        ApplicantNotFoundException exception,
+        HttpServletRequest request
+) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.NOT_FOUND,
+            exception.getMessage()
+    );
+
+    problem.setTitle("Applicant not found");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    problem.setProperty("code", "APPLICANT_NOT_FOUND");
+
+    return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(problem);
+}
 }

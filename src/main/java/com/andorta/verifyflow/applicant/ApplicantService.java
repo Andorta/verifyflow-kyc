@@ -3,6 +3,7 @@ package com.andorta.verifyflow.applicant;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 @Service
 public class ApplicantService {
@@ -42,4 +43,9 @@ public class ApplicantService {
             );
         }
     }
+    @Transactional(readOnly = true)
+public Applicant getApplicant(UUID id) {
+    return applicantRepository.findById(id)
+            .orElseThrow(() -> new ApplicantNotFoundException(id));
+}
 }
