@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -88,6 +89,26 @@ public ResponseEntity<ProblemDetail> handleApplicantNotFound(
 
     return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
+            .body(problem);
+}
+
+@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+public ResponseEntity<ProblemDetail> handleTypeMismatch(
+        MethodArgumentTypeMismatchException exception,
+        HttpServletRequest request
+) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "Invalid value for parameter: "
+                    + exception.getName()
+    );
+
+    problem.setTitle("Invalid request parameter");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    problem.setProperty("code", "INVALID_PARAMETER");
+
+    return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
             .body(problem);
 }
 }
