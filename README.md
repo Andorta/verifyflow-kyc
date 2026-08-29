@@ -1,5 +1,7 @@
 # VerifyFlow KYC
 
+[![CI](https://github.com/Andorta/verifyflow-kyc/actions/workflows/ci.yml/badge.svg)](https://github.com/Andorta/verifyflow-kyc/actions/workflows/ci.yml)
+
 A production-style KYC integration and verification workflow built with Java, Spring Boot, PostgreSQL, Flyway, and Docker.
 
 VerifyFlow demonstrates how a backend service can create applicants, start identity-verification cases, receive signed provider webhooks, prevent duplicate processing, and expose current and historical verification statuses.
