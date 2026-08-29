@@ -52,6 +52,8 @@ VerifyFlow implements these integration concerns behind a REST API.
 - Mockito
 - AssertJ
 - MockMvc
+- OpenAPI 3
+- Swagger UI
 
 ## Architecture
 
@@ -102,6 +104,13 @@ Invalid transitions are rejected by the domain model.
 | `GET` | `/api/v1/applicants/{id}/verification-cases` | Retrieve verification history |
 | `POST` | `/api/v1/webhooks/verification/{provider}` | Receive a provider webhook |
 | `GET` | `/actuator/health` | Check application health |
+
+## Interactive API documentation
+
+When the application is running, the interactive Swagger interface is available at:
+
+```text
+http://127.0.0.1:8080/swagger-ui.html
 
 ## Running locally
 
@@ -276,7 +285,7 @@ Run the complete suite with PostgreSQL running:
 ./mvnw clean test
 ```
 
-The project currently includes 45 tests covering:
+The project currently includes 46 tests covering:
 
 - Domain-state transitions
 - Applicant and verification services

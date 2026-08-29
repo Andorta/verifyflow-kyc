@@ -8,39 +8,32 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Provider Webhooks", description = "Authenticated verification-provider callbacks")
 
 @RestController
 @RequestMapping("/api/v1/webhooks/verification")
 public class WebhookController {
 
-    private final WebhookProcessingService processingService;
+        private final WebhookProcessingService processingService;
 
-    public WebhookController(
-            WebhookProcessingService processingService
-    ) {
-        this.processingService = processingService;
-    }
+        public WebhookController(
+                        WebhookProcessingService processingService) {
+                this.processingService = processingService;
+        }
 
-    @PostMapping(
-            value = "/{provider}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<WebhookResponse> receiveWebhook(
-            @PathVariable String provider,
-            @RequestHeader("X-Webhook-Signature")
-            String signature,
-            @RequestBody String rawPayload
-    ) {
-        WebhookProcessingResult result =
-                processingService.process(
-                        provider,
-                        signature,
-                        rawPayload
-                );
+        @PostMapping(value = "/{provider}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<WebhookResponse> receiveWebhook(
+                        @PathVariable String provider,
+                        @RequestHeader("X-Webhook-Signature") String signature,
+                        @RequestBody String rawPayload) {
+                WebhookProcessingResult result = processingService.process(
+                                provider,
+                                signature,
+                                rawPayload);
 
-        return ResponseEntity.ok(
-                new WebhookResponse(result)
-        );
-    }
+                return ResponseEntity.ok(
+                                new WebhookResponse(result));
+        }
 }
