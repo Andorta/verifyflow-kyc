@@ -56,3 +56,28 @@ jobs:
 
       - name: Run test suite
         run: ./mvnw --batch-mode --no-transfer-progress clean test
+
+  docker:
+    name: Docker image
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build application image
+        run: docker build --tag verifyflow-kyc:ci .
+
+      - name: Verify non-root runtime
+        run: |
+          configured_user="$(
+            docker image inspect \
+              verifyflow-kyc:ci \
+              --format '{{.Config.User}}'
+          )"
+          test "$configured_user" = "verifyflow"
+
+      - name: Verify Java runtime
+        run: docker run --rm --entrypoint java verifyflow-kyc:ci -version
