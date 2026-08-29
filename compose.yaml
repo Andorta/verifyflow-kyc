@@ -10,10 +10,29 @@ services:
     volumes:
       - verifyflow_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U verifyflow -d verifyflow"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U verifyflow -d verifyflow
       interval: 5s
       timeout: 5s
       retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verifyflow-kyc:local
+    environment:
+      DB_URL: "jdbc:postgresql://postgres:5432/${POSTGRES_DB:-verifyflow}"
+      DB_USERNAME: ${POSTGRES_USER:-verifyflow}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-verifyflow_dev}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-local-dev-webhook-secret}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   verifyflow_postgres_data:

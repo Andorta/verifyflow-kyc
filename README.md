@@ -107,22 +107,24 @@ Invalid transitions are rejected by the domain model.
 
 ### Requirements
 
+To run the complete containerized stack:
+
+- Docker Desktop
+
+To run the application directly from source:
+
 - Java 21
 - Docker Desktop
 
 Maven does not need to be installed because the repository includes the Maven Wrapper.
 
-### Start PostgreSQL
+### Option 1: Run the complete containerized stack
+
+Build and start VerifyFlow and PostgreSQL:
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 docker compose ps
-```
-
-### Run the application
-
-```bash
-./mvnw spring-boot:run
 ```
 
 The API will be available at:
@@ -137,12 +139,26 @@ Check its health:
 curl http://127.0.0.1:8080/actuator/health
 ```
 
-Expected response:
+Stop the stack:
 
-```json
-{
-  "status": "UP"
-}
+```bash
+docker compose down
+```
+
+The PostgreSQL data remains in its named Docker volume.
+
+### Option 2: Run the application from source
+
+Start only PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Run Spring Boot:
+
+```bash
+./mvnw spring-boot:run
 ```
 
 ## Example workflow
