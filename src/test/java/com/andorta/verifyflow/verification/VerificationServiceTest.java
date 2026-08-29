@@ -12,87 +12,150 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class VerificationServiceTest {
 
-    @Mock
-    private ApplicantRepository applicantRepository;
+        @Mock
+        private ApplicantRepository applicantRepository;
 
-    @Mock
-    private VerificationCaseRepository verificationCaseRepository;
+        @Mock
+        private VerificationCaseRepository verificationCaseRepository;
 
-    @Mock
-    private VerificationProvider verificationProvider;
+        @Mock
+        private VerificationProvider verificationProvider;
 
-    @InjectMocks
-    private VerificationService verificationService;
+        @InjectMocks
+        private VerificationService verificationService;
 
-    @Test
-    void startsVerificationForExistingApplicant() {
-        UUID applicantId = UUID.randomUUID();
+        @Test
+        void startsVerificationForExistingApplicant() {
+                UUID applicantId = UUID.randomUUID();
 
-        Applicant applicant = new Applicant(
-                "customer-301",
-                "verification@example.com",
-                "GB"
-        );
+                Applicant applicant = new Applicant(
+                                "customer-301",
+                                "verification@example.com",
+                                "GB");
 
-        ProviderSession providerSession =
-                new ProviderSession(
-                        "mock-session-301",
-                        URI.create(
-                                "https://sandbox.verifyflow.example/"
-                                        + "sessions/mock-session-301"
-                        )
-                );
+                ProviderSession providerSession = new ProviderSession(
+                                "mock-session-301",
+                                URI.create(
+                                                "https://sandbox.verifyflow.example/"
+                                                                + "sessions/mock-session-301"));
 
-        when(applicantRepository.findById(applicantId))
-                .thenReturn(Optional.of(applicant));
-        when(verificationProvider.name())
-                .thenReturn("MOCK");
-        when(verificationProvider.createSession(applicantId))
-                .thenReturn(providerSession);
-        when(verificationCaseRepository.saveAndFlush(
-                any(VerificationCase.class)
-        )).thenAnswer(invocation -> invocation.getArgument(0));
+                when(applicantRepository.findById(applicantId))
+                                .thenReturn(Optional.of(applicant));
+                when(verificationProvider.name())
+                                .thenReturn("MOCK");
+                when(verificationProvider.createSession(applicantId))
+                                .thenReturn(providerSession);
+                when(verificationCaseRepository.saveAndFlush(
+                                any(VerificationCase.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        StartVerificationResult result =
-                verificationService.startVerification(applicantId);
+                StartVerificationResult result = verificationService.startVerification(applicantId);
 
-        assertThat(result.verificationCase().getStatus())
-                .isEqualTo(VerificationStatus.PENDING);
-        assertThat(
-                result.verificationCase()
-                        .getProviderReference()
-        ).isEqualTo("mock-session-301");
-        assertThat(result.verificationUrl())
-                .isEqualTo(providerSession.verificationUrl());
-    }
+                assertThat(result.verificationCase().getStatus())
+                                .isEqualTo(VerificationStatus.PENDING);
+                assertThat(
+                                result.verificationCase()
+                                                .getProviderReference())
+                                .isEqualTo("mock-session-301");
+                assertThat(result.verificationUrl())
+                                .isEqualTo(providerSession.verificationUrl());
+        }
 
-    @Test
-    void rejectsUnknownApplicantBeforeCallingProvider() {
-        UUID applicantId = UUID.randomUUID();
+        @Test
+        void rejectsUnknownApplicantBeforeCallingProvider() {
+                UUID applicantId = UUID.randomUUID();
 
-        when(applicantRepository.findById(applicantId))
-                .thenReturn(Optional.empty());
+                when(applicantRepository.findById(applicantId))
+                                .thenReturn(Optional.empty());
 
-        assertThatThrownBy(
-                () -> verificationService
-                        .startVerification(applicantId)
-        )
-                .isInstanceOf(ApplicantNotFoundException.class)
-                .hasMessageContaining(applicantId.toString());
+                assertThatThrownBy(
+                                () -> verificationService
+                                                .startVerification(applicantId))
+                                .isInstanceOf(ApplicantNotFoundException.class)
+                                .hasMessageContaining(applicantId.toString());
 
-        verifyNoInteractions(
-                verificationProvider,
-                verificationCaseRepository
-        );
-    }
+                verifyNoInteractions(
+                                verificationProvider,
+                                verificationCaseRepository);
+        }
+
+        @Test
+        void returnsVerificationCaseWhenItExists() {
+                UUID caseId = UUID.randomUUID();
+                UUID applicantId = UUID.randomUUID();
+
+                Instant submittedAt = Instant.parse("2026-08-29T10:00:00Z");
+                Instant decidedAt = Instant.parse("2026-08-29T10:05:00Z");
+                Instant createdAt = Instant.parse("2026-08-29T09:59:00Z");
+                Instant updatedAt = Instant.parse("2026-08-29T10:05:00Z");
+
+                Applicant applicant = mock(Applicant.class);
+                VerificationCase verificationCase = mock(VerificationCase.class);
+
+                when(verificationCaseRepository.findById(caseId))
+                                .thenReturn(Optional.of(verificationCase));
+
+                when(verificationCase.getId()).thenReturn(caseId);
+                when(verificationCase.getApplicant())
+                                .thenReturn(applicant);
+                when(applicant.getId()).thenReturn(applicantId);
+                when(verificationCase.getProvider())
+                                .thenReturn("MOCK");
+                when(verificationCase.getProviderReference())
+                                .thenReturn("mock-session-601");
+                when(verificationCase.getStatus())
+                                .thenReturn(VerificationStatus.APPROVED);
+                when(verificationCase.getSubmittedAt())
+                                .thenReturn(submittedAt);
+                when(verificationCase.getDecidedAt())
+                                .thenReturn(decidedAt);
+                when(verificationCase.getCreatedAt())
+                                .thenReturn(createdAt);
+                when(verificationCase.getUpdatedAt())
+                                .thenReturn(updatedAt);
+
+                VerificationCaseResponse result = verificationService.getVerificationCase(caseId);
+
+                assertThat(result).isEqualTo(
+                                new VerificationCaseResponse(
+                                                caseId,
+                                                applicantId,
+                                                "MOCK",
+                                                "mock-session-601",
+                                                VerificationStatus.APPROVED,
+                                                submittedAt,
+                                                decidedAt,
+                                                createdAt,
+                                                updatedAt));
+        }
+
+        @Test
+        void throwsWhenVerificationCaseDoesNotExist() {
+                UUID caseId = UUID.randomUUID();
+
+                when(verificationCaseRepository.findById(caseId))
+                                .thenReturn(Optional.empty());
+
+                assertThatThrownBy(
+                                () -> verificationService
+                                                .getVerificationCase(caseId))
+                                .isInstanceOf(
+                                                VerificationCaseNotFoundException.class)
+                                .hasMessageContaining(caseId.toString());
+
+                verifyNoInteractions(
+                                applicantRepository,
+                                verificationProvider);
+        }
 }
