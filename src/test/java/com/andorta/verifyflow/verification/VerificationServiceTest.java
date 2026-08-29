@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -158,4 +159,91 @@ class VerificationServiceTest {
                                 applicantRepository,
                                 verificationProvider);
         }
+        @Test
+void returnsVerificationCasesForExistingApplicant() {
+    UUID applicantId = UUID.randomUUID();
+    UUID caseId = UUID.randomUUID();
+
+    Applicant applicant = mock(Applicant.class);
+    VerificationCase verificationCase =
+            mock(VerificationCase.class);
+
+    when(applicantRepository.existsById(applicantId))
+            .thenReturn(true);
+    when(verificationCaseRepository
+            .findByApplicant_IdOrderByCreatedAtDesc(
+                    applicantId
+            ))
+            .thenReturn(List.of(verificationCase));
+
+    when(verificationCase.getId()).thenReturn(caseId);
+    when(verificationCase.getApplicant())
+            .thenReturn(applicant);
+    when(applicant.getId()).thenReturn(applicantId);
+    when(verificationCase.getProvider())
+            .thenReturn("MOCK");
+    when(verificationCase.getProviderReference())
+            .thenReturn("mock-session-801");
+    when(verificationCase.getStatus())
+            .thenReturn(VerificationStatus.PENDING);
+
+    List<VerificationCaseResponse> result =
+            verificationService
+                    .getVerificationCasesForApplicant(
+                            applicantId
+                    );
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).caseId())
+            .isEqualTo(caseId);
+    assertThat(result.get(0).applicantId())
+            .isEqualTo(applicantId);
+    assertThat(result.get(0).providerReference())
+            .isEqualTo("mock-session-801");
+    assertThat(result.get(0).status())
+            .isEqualTo(VerificationStatus.PENDING);
+}
+
+@Test
+void returnsEmptyHistoryForApplicantWithoutCases() {
+    UUID applicantId = UUID.randomUUID();
+
+    when(applicantRepository.existsById(applicantId))
+            .thenReturn(true);
+    when(verificationCaseRepository
+            .findByApplicant_IdOrderByCreatedAtDesc(
+                    applicantId
+            ))
+            .thenReturn(List.of());
+
+    List<VerificationCaseResponse> result =
+            verificationService
+                    .getVerificationCasesForApplicant(
+                            applicantId
+                    );
+
+    assertThat(result).isEmpty();
+}
+
+@Test
+void rejectsHistoryRequestForUnknownApplicant() {
+    UUID applicantId = UUID.randomUUID();
+
+    when(applicantRepository.existsById(applicantId))
+            .thenReturn(false);
+
+    assertThatThrownBy(
+            () -> verificationService
+                    .getVerificationCasesForApplicant(
+                            applicantId
+                    )
+    )
+            .isInstanceOf(ApplicantNotFoundException.class)
+            .hasMessageContaining(applicantId.toString());
+
+    verifyNoInteractions(
+            verificationCaseRepository,
+            verificationProvider
+    );
+}
 }

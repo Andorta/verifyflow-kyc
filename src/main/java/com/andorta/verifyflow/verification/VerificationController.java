@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -54,4 +55,19 @@ public class VerificationController {
 
         return ResponseEntity.ok(response);
     }
+    @GetMapping(
+        "/applicants/{applicantId}/verification-cases"
+)
+public ResponseEntity<List<VerificationCaseResponse>>
+getApplicantVerificationCases(
+        @PathVariable UUID applicantId
+) {
+    List<VerificationCaseResponse> cases =
+            verificationService
+                    .getVerificationCasesForApplicant(
+                            applicantId
+                    );
+
+    return ResponseEntity.ok(cases);
+}
 }

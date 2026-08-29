@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.List;
 
 @Service
 public class VerificationService {
@@ -62,4 +63,21 @@ public class VerificationService {
                 return VerificationCaseResponse.from(
                                 verificationCase);
         }
+        @Transactional(readOnly = true)
+public List<VerificationCaseResponse>
+getVerificationCasesForApplicant(
+        UUID applicantId
+) {
+    if (!applicantRepository.existsById(applicantId)) {
+        throw new ApplicantNotFoundException(applicantId);
+    }
+
+    return verificationCaseRepository
+            .findByApplicant_IdOrderByCreatedAtDesc(
+                    applicantId
+            )
+            .stream()
+            .map(VerificationCaseResponse::from)
+            .toList();
+}
 }

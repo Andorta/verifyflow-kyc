@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -171,4 +172,98 @@ class VerificationControllerTest {
                                 .andExpect(jsonPath("$.code")
                                                 .value("INVALID_PARAMETER"));
         }
+        @Test
+void returnsApplicantVerificationHistory()
+        throws Exception {
+    UUID applicantId = UUID.randomUUID();
+    UUID caseId = UUID.randomUUID();
+
+    VerificationCaseResponse response =
+            new VerificationCaseResponse(
+                    caseId,
+                    applicantId,
+                    "MOCK",
+                    "mock-session-901",
+                    VerificationStatus.APPROVED,
+                    Instant.parse(
+                            "2026-08-29T11:00:00Z"
+                    ),
+                    Instant.parse(
+                            "2026-08-29T11:05:00Z"
+                    ),
+                    Instant.parse(
+                            "2026-08-29T10:59:00Z"
+                    ),
+                    Instant.parse(
+                            "2026-08-29T11:05:00Z"
+                    )
+            );
+
+    when(verificationService
+            .getVerificationCasesForApplicant(
+                    applicantId
+            ))
+            .thenReturn(List.of(response));
+
+    mockMvc.perform(get(
+                    "/api/v1/applicants/{applicantId}"
+                            + "/verification-cases",
+                    applicantId
+            ))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()")
+                    .value(1))
+            .andExpect(jsonPath("$[0].caseId")
+                    .value(caseId.toString()))
+            .andExpect(jsonPath("$[0].providerReference")
+                    .value("mock-session-901"))
+            .andExpect(jsonPath("$[0].status")
+                    .value("APPROVED"));
+}
+
+@Test
+void returnsEmptyApplicantVerificationHistory()
+        throws Exception {
+    UUID applicantId = UUID.randomUUID();
+
+    when(verificationService
+            .getVerificationCasesForApplicant(
+                    applicantId
+            ))
+            .thenReturn(List.of());
+
+    mockMvc.perform(get(
+                    "/api/v1/applicants/{applicantId}"
+                            + "/verification-cases",
+                    applicantId
+            ))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()")
+                    .value(0));
+}
+
+@Test
+void returnsNotFoundWhenListingCasesForUnknownApplicant()
+        throws Exception {
+    UUID applicantId = UUID.randomUUID();
+
+    when(verificationService
+            .getVerificationCasesForApplicant(
+                    applicantId
+            ))
+            .thenThrow(
+                    new ApplicantNotFoundException(
+                            applicantId
+                    )
+            );
+
+    mockMvc.perform(get(
+                    "/api/v1/applicants/{applicantId}"
+                            + "/verification-cases",
+                    applicantId
+            ))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code")
+                    .value("APPLICANT_NOT_FOUND"));
+}
 }
